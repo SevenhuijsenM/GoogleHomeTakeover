@@ -59,7 +59,7 @@ class ui_main_window(object):
         self.scan_duration_spin_box.setGeometry(QtCore.QRect(240, 50, 301, 31))
         self.scan_duration_spin_box.setObjectName("scan_duration_spin_box")
         self.scan_duration_spin_box.setRange(0, 1000)
-        self.scan_duration_spin_box.setValue(20)
+        self.scan_duration_spin_box.setValue(5)
         self.scan_wifi_button = QtWidgets.QPushButton(self.scan_wifi_tab)
         self.scan_wifi_button.setGeometry(QtCore.QRect(240, 90, 311, 31))
         self.scan_wifi_button.setObjectName("scan_wifi_button")
@@ -80,6 +80,8 @@ class ui_main_window(object):
         self.step3_label.setObjectName("step3_label")
         self.wifi_scan_combo_box = QtWidgets.QComboBox(self.select_wifi_tab)
         self.wifi_scan_combo_box.setGeometry(QtCore.QRect(200, 31, 371, 21))
+        self.wifi_scan_combo_box.setInsertPolicy(QtWidgets.QComboBox.InsertAtCurrent)
+        self.wifi_scan_combo_box.setMinimumContentsLength(0)
         self.wifi_scan_combo_box.setObjectName("wifi_scan_combo_box")
         self.scan_duration_devices_label = QtWidgets.QLabel(self.select_wifi_tab)
         self.scan_duration_devices_label.setGeometry(QtCore.QRect(310, 50, 781, 16))
@@ -88,7 +90,7 @@ class ui_main_window(object):
         self.scan_duration_devices_spin_box.setGeometry(QtCore.QRect(240, 65, 301, 31))
         self.scan_duration_devices_spin_box.setObjectName("scan_duration_devices_spin_box")
         self.scan_duration_devices_spin_box.setRange(0, 100)
-        self.scan_duration_devices_spin_box.setValue(5)
+        self.scan_duration_devices_spin_box.setValue(20)
         self.scan_devices_button = QtWidgets.QPushButton(self.select_wifi_tab)
         self.scan_devices_button.setGeometry(QtCore.QRect(200, 100, 371, 31))
         self.scan_devices_button.setObjectName("scan_devices_button")
@@ -105,6 +107,8 @@ class ui_main_window(object):
         self.step4_label.setObjectName("step4_label")
         self.device_block_combo_box = QtWidgets.QComboBox(self.block_device_tab)
         self.device_block_combo_box.setGeometry(QtCore.QRect(200, 50, 371, 21))
+        self.device_block_combo_box.setInsertPolicy(QtWidgets.QComboBox.InsertAtCurrent)
+        self.device_block_combo_box.setMinimumContentsLength(0)
         self.device_block_combo_box.setObjectName("device_block_combo_box")
         self.block_device_label = QtWidgets.QLabel(self.block_device_tab)
         self.block_device_label.setGeometry(QtCore.QRect(300, 30, 311, 16))
@@ -169,7 +173,7 @@ class ui_main_window(object):
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.network_interface_tab), _translate("main_window", "Step 1"))
         self.step2_label.setText(_translate("main_window", "Scan for Wi-Fi Networks"))
         self.scan_wifi_button.setText(_translate("main_window", "Start scanning"))
-        self.scan_duration_seconds.setText(_translate("main_window", "Scanning duration in seconds ( Recommended > 15 )"))
+        self.scan_duration_seconds.setText(_translate("main_window", "Scanning duration in seconds"))
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.scan_wifi_tab), _translate("main_window", "Step 2"))
         self.step3_label.setText(_translate("main_window", "Select the Wi-Fi network that contains a Google Home"))
         self.scan_duration_devices_label.setText(_translate("main_window", "Scanning duration in seconds"))
@@ -183,7 +187,7 @@ class ui_main_window(object):
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.take_over_google_tab), _translate("main_window", "Step 5"))
 
     def enable_tabs(self, index):
-        # This function enables all tabs up to i
+        # This function enables all chtabs up to i
         for i in range(index):
             self.tab_widget.setTabEnabled(i, True)
 
@@ -198,10 +202,10 @@ class ui_main_window(object):
                 self.tab_widget.setTabEnabled(i, False)
 
     def on_click_scan_wifi(self):
-        self.scanning_wifi = not self.scanning_wifi
-
         # The program is searching for networks
-        if self.scanning_wifi:
+        if not self.scanning_wifi:
+            self.scanning_wifi = not self.scanning_wifi
+
             # Set the network adapter to monitor mode
             set_monitor_mode(self.input_box_interfaces.currentText())
 
@@ -228,6 +232,8 @@ class ui_main_window(object):
 
     def stop_event_wifi(self):
         if not self.stop_event.isSet():
+            self.scanning_wifi = not self.scanning_wifi
+
             # Cancel the timer if this is ran by the timer
             if self.scan_wifi_timer.is_alive():
                 self.scan_wifi_timer.cancel()
@@ -245,10 +251,10 @@ class ui_main_window(object):
                 self.wifi_scan_combo_box.addItem(self.networks.iloc[i]["SSID"])
 
     def on_click_scan_devices(self):
-        self.scanning_devices = not self.scanning_devices
-
         # The program is searching for devices on the network
-        if self.scanning_devices:
+        if not self.scanning_devices:
+            self.scanning_devices = not self.scanning_devices
+
             # Clear all the  previously scanned networks fro mthe combobox
             self.device_block_combo_box.clear()
 
@@ -256,11 +262,12 @@ class ui_main_window(object):
             self.stop_event = threading.Event()
 
             # Create a timer that waits for the x amount of seconds
-            self.scan_device_timer = Timer(self.scan_duration_devices_spin_box.value(), self.stop_event)
+            self.scan_device_timer = Timer(self.scan_duration_devices_spin_box.value(), self.stop_event_devices)
             self.scan_device_timer.start()
 
             # Create an async task for this to maintain a responsive gui
-            Thread(target=get_devices, args=(self.input_box_interfaces.currentText(), self.wifi_scan_combo_box.currentText(), self.devices, self.stop_event)).start()
+            currentIndex = self.wifi_scan_combo_box.currentIndex()
+            Thread(target=get_devices, args=(self.input_box_interfaces.currentText(), self.networks.iloc[[currentIndex]], self.devices, self.stop_event)).start()
 
             self.scan_devices_button.setText("Stop scanning")
             self.disable_tabs(2)
@@ -270,6 +277,8 @@ class ui_main_window(object):
 
     def stop_event_devices(self):
         if not self.stop_event.isSet():
+            self.scanning_devices = not self.scanning_devices
+
             # Cancel the timer if this is ran by the timer
             if self.scan_device_timer.is_alive():
                 self.scan_device_timer.cancel()
@@ -295,8 +304,11 @@ class ui_main_window(object):
             self.stop_event = threading.Event()
 
             # Create an async task for this to maintain a responsive gui
-            Thread(target=block_device, args=(self.input_box_interfaces.currentText(), self.wifi_scan_combo_box.currentText(), self.device_block_combo_box.currentText(), self.stop_event)).start()
-
+            currentIndexNetwork = self.wifi_scan_combo_box.currentIndex()
+            currentIndexDevice = self.device_block_combo_box.currentIndex()
+            Thread(target=block_device, args=(self.input_box_interfaces.currentText(), self.networks.iloc[[currentIndexNetwork]],
+            self.devices.iloc[[currentIndexDevice]], self.stop_event)).start()
+    
             self.block_device_button.setText("Stop blocking")
             self.disable_tabs(3)
             self.tab_widget.setTabEnabled(4, True)
