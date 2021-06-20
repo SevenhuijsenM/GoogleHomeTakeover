@@ -9,7 +9,7 @@ from subprocess import Popen, PIPE
 def add_wlan_names(dropdown_menu): 
     # Retrieve interfaces to use for monitoring the internet traffic
     print("Getting the wifi devices")
-    
+
     # Read from the wireless connection file in linux
     f = open("/proc/net/dev")
 
@@ -82,7 +82,7 @@ def get_devices(network_monitor, wifi_network, devices, stop_event):
     unknown_mac = []
 
     # Specify if the mac vendor is applied or only google home products are applied
-    GOOGLE_HOME_MAC = False
+    GOOGLE_HOME_MAC = True
 
     # The Google Home Devices with vendor numbers:
     vendor_addresses = [["Google Home Mini 1st gen", "44:07:0b"], ["Google Home Mini 2nd gen", "d4:f5:47"]]
@@ -140,6 +140,7 @@ def get_devices(network_monitor, wifi_network, devices, stop_event):
     ch = wifi_network["Channel"][0]
 
     os.system(f"iwconfig {network_monitor} channel {ch}")
+    devices2 = []
 
     sniff(prn=process_packet, iface=network_monitor, stop_filter=lambda p: stop_event.is_set())
 
