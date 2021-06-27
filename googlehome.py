@@ -21,7 +21,6 @@ class ui_main_window(object):
         # Create the main window with a vertical layout
         main_window.setObjectName("main_window")
         main_window.resize(828, 195)
-        self.setFixedSize(828, 195)
         self.central_widget = QtWidgets.QWidget(main_window)
         self.central_widget.setObjectName("central_widget")
         self.vertical_layout = QtWidgets.QVBoxLayout(self.central_widget)
